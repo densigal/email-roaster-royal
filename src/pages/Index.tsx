@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseAnon = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [text, setText] = useState("");
@@ -35,20 +34,13 @@ const Index = () => {
     try {
       setLoading(true);
       setRoast("");
-      const resp = await fetch(`${supabaseUrl}/functions/v1/roast`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${supabaseAnon}`,
-        },
-        body: JSON.stringify({ text }),
+      const { data, error } = await supabase.functions.invoke("roast", {
+        body: { text },
       });
-      if (!resp.ok) {
-        const errJson = await resp.json().catch(() => ({}));
-        throw new Error((errJson as any)?.error || "Request failed");
+      if (error) {
+        throw new Error(error.message || "Request failed");
       }
-      const json = await resp.json();
-      setRoast((json as any)?.roast ?? "No roast returned. Try again.");
+      setRoast((data as any)?.roast ?? "No roast returned. Try again.");
     } catch (err: any) {
       console.error(err);
       toast({ title: "Something broke", description: "The roast master choked. Try again." });
